@@ -1,0 +1,60 @@
+@startuml team_4_component_diagram_after
+title ENPM611 Poetry Issue Analyzer: Component Diagram (After, Team 4 Design)
+skinparam componentStyle uml2
+skinparam shadowing false
+left to right direction
+
+actor "User (CLI)" as user
+
+package "Application" {
+  component "run.py\n(Entry Point / Feature Dispatcher)" as run
+  package "Analyses" as analyses {
+    component "example_analysis.py\n(ExampleAnalysis, feature 0)" as example
+    component "label_resolution_analysis.py\n(LabelResolutionAnalysis, feature 1)\nTime to close per label, open backlog" as f1 #EAF3FF
+    component "contributor_activity_analysis.py\n(ContributorActivityAnalysis, feature 2)\nTop contributors, per user activity" as f2 #EAF3FF
+    component "issue_trend_analysis.py\n(IssueTrendAnalysis, feature 3)\nMonthly opened vs closed, backlog trend" as f3 #EAF3FF
+  }
+  component "data_loader.py\n(DataLoader)" as loader
+  component "model.py\n(Issue, Event, State)" as model
+  component "config.py\n(Configuration)" as config
+}
+
+package "External Libraries" as libs {
+  component "pandas" as pandas
+  component "matplotlib" as mpl
+  component "python-dateutil" as dateutil
+}
+
+file "poetry issues\n(JSON data file)" as datafile
+file "config.json" as cfgfile
+collections "Environment Variables\n(ENPM611_PROJECT_DATA_PATH)" as env
+
+legend bottom right
+  Blue components are new in the Team 4 design.
+  Arrows from the Analyses package apply to every analysis inside it.
+endlegend
+
+user --> run : python run.py ~--feature N\n[~--user] [~--label]
+run --> config : overwrite_from_args()
+run --> example : feature 0
+run --> f1 : feature 1
+run --> f2 : feature 2
+run --> f3 : feature 3
+
+f1 --> config : get_parameter('label')
+f2 --> config : get_parameter('user')
+f3 --> config : get_parameter('label')
+example --> config : get_parameter('user')
+
+analyses --> loader : get_issues()
+analyses --> model : uses Issue, Event
+analyses --> pandas : aggregate
+analyses --> mpl : charts
+
+loader --> config : get_parameter(DATA_PATH)
+loader --> model : Issue(json)
+loader --> datafile : reads
+config --> cfgfile : reads
+config --> env : reads / writes
+model --> dateutil : parse dates
+@enduml

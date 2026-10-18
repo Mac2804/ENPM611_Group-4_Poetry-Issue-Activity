@@ -1,0 +1,41 @@
+@startuml team_4_component_diagram_before
+title ENPM611 Poetry Issue Analyzer: Component Diagram (Before, Template)
+skinparam componentStyle uml2
+skinparam shadowing false
+left to right direction
+
+actor "User (CLI)" as user
+
+package "Application" {
+  component "run.py\n(Entry Point / Feature Dispatcher)" as run
+  component "config.py\n(Configuration)" as config
+  component "data_loader.py\n(DataLoader)" as loader
+  component "model.py\n(Issue, Event, State)" as model
+  component "example_analysis.py\n(ExampleAnalysis, feature 0)" as example
+}
+
+package "External Libraries" {
+  component "pandas" as pandas
+  component "matplotlib" as mpl
+  component "python-dateutil" as dateutil
+}
+
+file "config.json" as cfgfile
+file "poetry issues\n(JSON data file)" as datafile
+collections "Environment Variables\n(ENPM611_PROJECT_DATA_PATH)" as env
+
+user --> run : python run.py ~--feature N\n[~--user] [~--label]
+run --> config : overwrite_from_args()
+run --> example : run()
+example --> loader : get_issues()
+example --> config : get_parameter('user')
+example --> model : uses Issue, Event
+example --> pandas
+example --> mpl : bar chart
+loader --> config : get_parameter(DATA_PATH)
+loader --> model : Issue(json)
+loader --> datafile : reads
+config --> cfgfile : reads
+config --> env : reads / writes
+model --> dateutil : parse dates
+@enduml
