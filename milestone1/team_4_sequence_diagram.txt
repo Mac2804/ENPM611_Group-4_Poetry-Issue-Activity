@@ -1,0 +1,64 @@
+@startuml team_4_sequence_diagram
+title ENPM611 Team 4: Sequence Diagram (Feature 1, Label Resolution Analysis)
+skinparam shadowing false
+autonumber
+
+actor "User" as user
+participant "run.py" as run
+participant "config.py" as config
+participant "LabelResolutionAnalysis" as f1
+participant "DataLoader" as loader
+participant "model.Issue / Event" as model
+database "poetry issues JSON" as data
+participant "pandas" as pd
+participant "matplotlib" as plt
+
+user -> run : python run.py ~--feature 1 [~--label bug]
+activate run
+run -> run : parse_args()
+run -> config : overwrite_from_args(args)
+activate config
+config -> config : set_parameter(name, value)\n(stored as environment variables)
+config --> run
+deactivate config
+
+run -> f1 : LabelResolutionAnalysis()
+activate f1
+f1 -> config : get_parameter('label')
+config --> f1 : label or None
+run -> f1 : run()
+
+f1 -> loader : DataLoader().get_issues()
+activate loader
+loader -> config : get_parameter('ENPM611_PROJECT_DATA_PATH')
+config --> loader : data_path
+alt issues not yet cached (_ISSUES is None)
+  loader -> data : open and json.load()
+  data --> loader : list of issue records
+  loop for each issue record
+    loader -> model : Issue(jobj)
+    model -> model : from_json() builds Event list,\nparses dates with dateutil
+    model --> loader : Issue
+  end
+  loader -> loader : cache in _ISSUES
+end
+loader --> f1 : List[Issue]
+deactivate loader
+
+loop for each closed Issue (matching label if given)
+  f1 -> model : read labels, created_date, events
+  f1 -> f1 : find 'closed' Event,\nresolution days = event_date minus created_date
+end
+f1 -> pd : DataFrame(label, resolution_days, state)
+activate pd
+pd --> f1 : groupby label: median days, closed count, open count
+deactivate pd
+
+f1 -> user : print summary table (slowest and fastest labels)
+f1 -> plt : bar chart of median resolution days per label
+activate plt
+plt --> user : chart window (plt.show())
+deactivate plt
+deactivate f1
+deactivate run
+@enduml
